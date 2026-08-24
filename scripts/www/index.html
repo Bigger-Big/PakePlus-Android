@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>软管与接头查询 · 苏强格</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: #eaf2f8;
+            color: #1a2a3a;
+            min-height: 100vh;
+            padding: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .app-container {
+            max-width: 1460px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 14px;
+            box-shadow: 0 8px 30px rgba(26, 82, 118, 0.12);
+            overflow: hidden;
+            padding: 0 0 20px 0;
+        }
+        .header {
+            background: linear-gradient(145deg, #1a5276, #1f618d);
+            padding: 20px 16px 16px 16px;
+            color: #ffffff;
+            border-bottom: 4px solid #2e86c1;
+        }
+        .header h1 {
+            font-size: 22px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .header h1 small {
+            font-size: 14px;
+            font-weight: 400;
+            opacity: 0.8;
+            margin-left: 4px;
+        }
+        .header .subtitle {
+            font-size: 13px;
+            opacity: 0.75;
+            margin-top: 4px;
+            font-weight: 300;
+        }
+
+        .view-switcher {
+            padding: 12px 16px 6px 16px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #dde4ec;
+        }
+        .view-btn {
+            padding: 10px 20px;
+            background: #e8edf4;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            color: #2c4a6a;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+            font-family: inherit;
+            flex: 1 1 auto;
+            min-width: 120px;
+            text-align: center;
+            touch-action: manipulation;
+        }
+        .view-btn.active {
+            background: #2e86c1;
+            color: #ffffff;
+            box-shadow: 0 2px 6px rgba(46, 134, 193, 0.3);
+        }
+        .view-btn:hover:not(.active) {
+            background: #d5dee9;
+        }
+
+        .filter-bar {
+            padding: 8px 16px 6px 16px;
+            display: none;
+            flex-wrap: wrap;
+            gap: 8px 14px;
+            border-bottom: 1px solid #e8edf4;
+            align-items: center;
+            background: #f9fcff;
+        }
+        .filter-bar.visible {
+            display: flex;
+        }
+        .filter-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px 8px;
+        }
+        .filter-group .label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #3a5a7a;
+            margin-right: 2px;
+            white-space: nowrap;
+        }
+        .filter-btn {
+            padding: 6px 14px;
+            background: #f0f4f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #2c4a6a;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+            touch-action: manipulation;
+            white-space: nowrap;
+        }
+        .filter-btn.active {
+            background: #2e86c1;
+            border-color: #2e86c1;
+            color: #fff;
+        }
+        .filter-btn:hover:not(.active) {
+            background: #dde4ec;
+        }
+
+        .result-stats {
+            padding: 10px 16px 4px 16px;
+            font-size: 14px;
+            color: #3a5a7a;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .result-stats .count { font-weight: 600; color: #1a5276; }
+        .result-stats .hint { font-size: 13px; color: #7a8fa5; }
+
+        .table-wrapper {
+            padding: 0 12px 10px 12px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            display: none;
+        }
+        .table-wrapper.visible { display: block; }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 14px;
+            min-width: 600px;
+        }
+        thead th {
+            background: #1a5276;
+            color: #fff;
+            font-weight: 600;
+            padding: 12px 8px;
+            text-align: left;
+            font-size: 13px;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+        thead th:first-child { border-radius: 8px 0 0 0; }
+        thead th:last-child { border-radius: 0 8px 0 0; }
+        tbody td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e8edf4;
+            vertical-align: middle;
+            color: #1a2a3a;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+        tbody tr:nth-child(even) { background: #f8faff; }
+        tbody tr:hover { background: #e8f0fa; }
+        tbody tr:last-child td { border-bottom: none; }
+        .col-code { font-weight: 600; color: #1a5276; white-space: nowrap; }
+        .col-thread { font-weight: 500; color: #1f618d; }
+        .col-num { text-align: center; }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #7a8fa5;
+        }
+        .empty-state .icon { font-size: 40px; margin-bottom: 10px; opacity: 0.6; }
+
+        @media (max-width: 640px) {
+            .header h1 { font-size: 20px; }
+            .header h1 small { font-size: 13px; display: block; margin-top: 2px; }
+            .view-btn { font-size: 15px; padding: 12px 12px; min-width: 80px; }
+            .filter-btn { font-size: 13px; padding: 8px 14px; }
+            .filter-group .label { font-size: 13px; }
+            table { font-size: 13px; min-width: 500px; }
+            thead th, tbody td { padding: 8px 6px; }
+            .result-stats { font-size: 13px; flex-direction: column; align-items: flex-start; }
+        }
+        @media (max-width: 480px) {
+            .header h1 { font-size: 18px; }
+            .view-btn { font-size: 14px; padding: 10px 8px; min-width: 60px; }
+            .filter-btn { font-size: 12px; padding: 6px 10px; }
+            table { font-size: 12px; min-width: 440px; }
+            thead th, tbody td { padding: 6px 4px; }
+        }
+
+        @media print {
+            body { background: #fff; padding: 0; }
+            .app-container { box-shadow: none; border-radius: 0; }
+            .view-btn, .filter-btn, .view-switcher, .filter-bar { display: none; }
+            .table-wrapper { display: block !important; }
+            thead th { background: #1a5276 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            tbody tr:nth-child(even) { background: #f8faff !important; }
+        }
+        .table-wrapper::-webkit-scrollbar { height: 8px; }
+        .table-wrapper::-webkit-scrollbar-track { background: #e8edf4; border-radius: 4px; }
+        .table-wrapper::-webkit-scrollbar-thumb { background: #b0c4d8; border-radius: 4px; }
+        .table-wrapper::-webkit-scrollbar-thumb:hover { background: #8aa2ba; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+
+    <header class="header">
+        <h1>
+            🔧 软管 · 接头查询
+            <small>苏强格样本</small>
+        </h1>
+        <div class="subtitle">切换视图 · 分类筛选 · 数据真实</div>
+    </header>
+
+    <!-- 视图切换 -->
+    <div class="view-switcher">
+        <button class="view-btn active" data-view="hose">📋 软管数据</button>
+        <button class="view-btn" data-view="fitting">🔩 接头数据</button>
+    </div>
+
+    <!-- 软管分类筛选栏 -->
+    <div class="filter-bar visible" id="hoseFilterBar">
+        <div class="filter-group" id="hoseFilterGroup">
+            <!-- 由JS动态生成 -->
+        </div>
+    </div>
+
+    <!-- 接头分类+角度筛选栏 -->
+    <div class="filter-bar" id="fittingFilterBar">
+        <div class="filter-group">
+            <span class="label">分类：</span>
+            <button class="filter-btn active" data-type="category" data-value="all">全部</button>
+            <button class="filter-btn" data-type="category" data-value="light">公制轻</button>
+            <button class="filter-btn" data-type="category" data-value="heavy">公制重</button>
+            <button class="filter-btn" data-type="category" data-value="flange3k">法兰3K</button>
+            <button class="filter-btn" data-type="category" data-value="flange6k">法兰6K</button>
+        </div>
+        <div class="filter-group">
+            <span class="label">角度：</span>
+            <button class="filter-btn active" data-type="angle" data-value="all">全部</button>
+            <button class="filter-btn" data-type="angle" data-value="straight">直头</button>
+            <button class="filter-btn" data-type="angle" data-value="45">45°</button>
+            <button class="filter-btn" data-type="angle" data-value="90">90°</button>
+        </div>
+    </div>
+
+    <!-- 统计 -->
+    <div class="result-stats">
+        <span>共 <span class="count" id="resultCount">0</span> 条记录</span>
+        <span class="hint" id="activeHint">当前视图: 软管</span>
+    </div>
+
+    <!-- 表格 -->
+    <div class="table-wrapper visible" id="tableWrapper">
+        <table>
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    // ============================================================
+    //  1. 软管数据 (完整)
+    // ============================================================
+    const hoseData = [
+        { model: "1SN04", dash: "-04", inner: 6.4, outer: 13.4, pressure: 22.5, remark: "弯曲半径 100 mm" },
+        { model: "1SN05", dash: "-05", inner: 7.9, outer: 15.0, pressure: 21.5, remark: "弯曲半径 115 mm" },
+        { model: "1SN06", dash: "-06", inner: 9.5, outer: 17.4, pressure: 18.0, remark: "弯曲半径 130 mm" },
+        { model: "1SN08", dash: "-08", inner: 12.7, outer: 20.6, pressure: 16.0, remark: "弯曲半径 180 mm" },
+        { model: "1SN10", dash: "-10", inner: 15.9, outer: 23.7, pressure: 13.0, remark: "弯曲半径 200 mm" },
+        { model: "1SN12", dash: "-12", inner: 19.0, outer: 27.7, pressure: 10.5, remark: "弯曲半径 240 mm" },
+        { model: "1SN16", dash: "-16", inner: 25.4, outer: 35.6, pressure: 8.8, remark: "弯曲半径 300 mm" },
+        { model: "1SN20", dash: "-20", inner: 31.8, outer: 43.5, pressure: 6.3, remark: "弯曲半径 420 mm" },
+        { model: "1SN24", dash: "-24", inner: 38.1, outer: 50.6, pressure: 5.0, remark: "弯曲半径 500 mm" },
+        { model: "1SN32", dash: "-32", inner: 50.8, outer: 64.1, pressure: 4.0, remark: "弯曲半径 630 mm" },
+        { model: "2SN04", dash: "-04", inner: 6.4, outer: 15.0, pressure: 40.0, remark: "弯曲半径 100 mm" },
+        { model: "2SN05", dash: "-05", inner: 7.9, outer: 16.7, pressure: 35.0, remark: "弯曲半径 115 mm" },
+        { model: "2SN06", dash: "-06", inner: 9.5, outer: 19.1, pressure: 33.0, remark: "弯曲半径 130 mm" },
+        { model: "2SN08", dash: "-08", inner: 12.7, outer: 22.2, pressure: 27.5, remark: "弯曲半径 180 mm" },
+        { model: "2SN10", dash: "-10", inner: 15.9, outer: 25.4, pressure: 25.0, remark: "弯曲半径 200 mm" },
+        { model: "2SN12", dash: "-12", inner: 19.0, outer: 29.3, pressure: 21.5, remark: "弯曲半径 240 mm" },
+        { model: "2SN16", dash: "-16", inner: 25.4, outer: 38.1, pressure: 16.5, remark: "弯曲半径 300 mm" },
+        { model: "2SN20", dash: "-20", inner: 31.8, outer: 48.3, pressure: 12.5, remark: "弯曲半径 420 mm" },
+        { model: "2SN24", dash: "-24", inner: 38.1, outer: 54.6, pressure: 9.0, remark: "弯曲半径 500 mm" },
+        { model: "2SN32", dash: "-32", inner: 50.8, outer: 67.4, pressure: 8.0, remark: "弯曲半径 630 mm" },
+        { model: "4SP04", dash: "-04", inner: 6.4, outer: 17.9, pressure: 45.0, remark: "弯曲半径 150 mm" },
+        { model: "4SP06", dash: "-06", inner: 9.5, outer: 21.4, pressure: 44.5, remark: "弯曲半径 180 mm" },
+        { model: "4SP08", dash: "-08", inner: 12.7, outer: 24.6, pressure: 41.5, remark: "弯曲半径 230 mm" },
+        { model: "4SP10", dash: "-10", inner: 15.9, outer: 28.2, pressure: 35.0, remark: "弯曲半径 250 mm" },
+        { model: "4SP12", dash: "-12", inner: 19.0, outer: 32.2, pressure: 35.0, remark: "弯曲半径 300 mm" },
+        { model: "4SP16", dash: "-16", inner: 25.4, outer: 39.7, pressure: 28.0, remark: "弯曲半径 340 mm" },
+        { model: "4SP20", dash: "-20", inner: 31.8, outer: 50.8, pressure: 21.0, remark: "弯曲半径 460 mm" },
+        { model: "4SP24", dash: "-24", inner: 38.1, outer: 57.2, pressure: 18.5, remark: "弯曲半径 560 mm" },
+        { model: "4SP32", dash: "-32", inner: 50.8, outer: 69.8, pressure: 16.5, remark: "弯曲半径 660 mm" },
+        { model: "4SH12", dash: "-12", inner: 19.0, outer: 32.2, pressure: 42.0, remark: "弯曲半径 280 mm" },
+        { model: "4SH16", dash: "-16", inner: 25.4, outer: 38.7, pressure: 38.0, remark: "弯曲半径 340 mm" },
+        { model: "4SH20", dash: "-20", inner: 31.8, outer: 45.5, pressure: 32.5, remark: "弯曲半径 460 mm" },
+        { model: "4SH24", dash: "-24", inner: 38.1, outer: 53.5, pressure: 29.0, remark: "弯曲半径 560 mm" },
+        { model: "4SH32", dash: "-32", inner: 50.8, outer: 68.1, pressure: 25.0, remark: "弯曲半径 700 mm" },
+        { model: "R1512", dash: "-12", inner: 19.0, outer: 31.6, pressure: 42.0, remark: "弯曲半径 280 mm" },
+        { model: "R1516", dash: "-16", inner: 25.4, outer: 38.6, pressure: 42.0, remark: "弯曲半径 300 mm" },
+        { model: "R1520", dash: "-20", inner: 31.8, outer: 49.6, pressure: 42.0, remark: "弯曲半径 400 mm" },
+        { model: "R1524", dash: "-24", inner: 38.1, outer: 56.5, pressure: 42.0, remark: "弯曲半径 500 mm" }
+    ];
+
+    // ============================================================
+    //  提取软管分类前缀 (1SN, 2SN, 4SH, 4SP, R15)
+    // ============================================================
+    function getHosePrefix(model) {
+        // 匹配开头字母数字部分，直到遇到两位数字结尾
+        const match = model.match(/^([A-Z0-9]+?)\d{2}$/);
+        if (match) return match[1];
+        // fallback: 取前3或前4个字符
+        if (model.startsWith('1SN') || model.startsWith('2SN')) return model.substring(0, 3);
+        if (model.startsWith('4SH') || model.startsWith('4SP')) return model.substring(0, 4);
+        if (model.startsWith('R15')) return 'R15';
+        return model;
+    }
+
+    function getHoseCategories() {
+        const set = new Set();
+        hoseData.forEach(item => {
+            const prefix = getHosePrefix(item.model);
+            set.add(prefix);
+        });
+        // 按期望顺序排序: 1SN, 2SN, 4SH, 4SP, R15
+        const order = ['1SN', '2SN', '4SH', '4SP', 'R15'];
+        const sorted = Array.from(set).sort((a, b) => {
+            const ia = order.indexOf(a);
+            const ib = order.indexOf(b);
+            if (ia !== -1 && ib !== -1) return ia - ib;
+            if (ia !== -1) return -1;
+            if (ib !== -1) return 1;
+            return a.localeCompare(b);
+        });
+        return sorted;
+    }
+    const hoseCategories = getHoseCategories(); // ["1SN","2SN","4SH","4SP","R15"]
+
+    // ============================================================
+    //  2. 接头数据
+    // ============================================================
+    function getAngleFromCode(code) {
+        if (/11-/.test(code)) return 'straight';
+        if (/41-/.test(code)) return '45';
+        if (/91-/.test(code)) return '90';
+        return 'straight';
+    }
+
+    const baseFitting = [
+        // ---- 公制轻系列 (204) ----
+        { code: "20411-12-04", thread: "M12X1.5", dn: 6, dash: "04", tube_od: 6, L: 22, S1: 17, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20411-14-04", thread: "M14X1.5", dn: 6, dash: "04", tube_od: 8, L: 23.5, S1: 17, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20411-16-04", thread: "M16X1.5", dn: 6, dash: "04", tube_od: 10, L: 20.5, S1: 19, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20411-16-05", thread: "M16X1.5", dn: 8, dash: "05", tube_od: 10, L: 25.5, S1: 19, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20411-18-05", thread: "M18X1.5", dn: 8, dash: "05", tube_od: 12, L: 23.5, S1: 22, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20411-18-06", thread: "M18X1.5", dn: 10, dash: "06", tube_od: 12, L: 26.5, S1: 22, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20411-22-08", thread: "M22X1.5", dn: 13, dash: "08", tube_od: 15, L: 28.5, S1: 27, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20411-26-08", thread: "M26X1.5", dn: 13, dash: "08", tube_od: 18, L: 30, S1: 32, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20411-26-10", thread: "M26X1.5", dn: 16, dash: "10", tube_od: 18, L: 32, S1: 32, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20411-30-10", thread: "M30X2", dn: 16, dash: "10", tube_od: 22, L: 32.5, S1: 36, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20411-30-12", thread: "M30X2", dn: 19, dash: "12", tube_od: 22, L: 33.5, S1: 36, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20411-36-12", thread: "M36X2", dn: 19, dash: "12", tube_od: 28, L: 35, S1: 41, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20411-36-16", thread: "M36X2", dn: 25, dash: "16", tube_od: 28, L: 36, S1: 41, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20411-45-16", thread: "M45X2", dn: 25, dash: "16", tube_od: 35, L: 34, S1: 50, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20411-45-20", thread: "M45X2", dn: 32, dash: "20", tube_od: 35, L: 35, S1: 50, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20411-52-20", thread: "M52X2", dn: 32, dash: "20", tube_od: 42, L: 38, S1: 60, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20411-52-24", thread: "M52X2", dn: 38, dash: "24", tube_od: 42, L: 38, S1: 60, H: null, D: null, L1: null, flange: null, category: "light" },
+        { code: "20441-14-04", thread: "M14X1.5", dn: 6, dash: "04", tube_od: 8, L: 39.8, S1: 17, H: 16, D: null, L1: null, flange: null, category: "light" },
+        { code: "20441-16-04", thread: "M16X1.5", dn: 6, dash: "04", tube_od: 10, L: 40.8, S1: 19, H: 17, D: null, L1: null, flange: null, category: "light" },
+        { code: "20441-16-05", thread: "M16X1.5", dn: 8, dash: "05", tube_od: 10, L: 40.7, S1: 19, H: 17, D: null, L1: null, flange: null, category: "light" },
+        { code: "20441-18-05", thread: "M18X1.5", dn: 8, dash: "05", tube_od: 12, L: 42.2, S1: 22, H: 18.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20441-18-06", thread: "M18X1.5", dn: 10, dash: "06", tube_od: 12, L: 44.5, S1: 22, H: 18.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20441-22-08", thread: "M22X1.5", dn: 13, dash: "08", tube_od: 15, L: 50.8, S1: 27, H: 19.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20441-26-08", thread: "M26X1.5", dn: 13, dash: "08", tube_od: 18, L: 54.8, S1: 32, H: 23.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20441-26-10", thread: "M26X1.5", dn: 16, dash: "10", tube_od: 18, L: 62.7, S1: 32, H: 23.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20441-30-10", thread: "M30X2", dn: 16, dash: "10", tube_od: 22, L: 64.7, S1: 36, H: 25.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20441-30-12", thread: "M30X2", dn: 19, dash: "12", tube_od: 22, L: 68.2, S1: 36, H: 25.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20441-36-12", thread: "M36X2", dn: 19, dash: "12", tube_od: 28, L: 74.7, S1: 41, H: 32, D: null, L1: null, flange: null, category: "light" },
+        { code: "20441-36-16", thread: "M36X2", dn: 25, dash: "16", tube_od: 28, L: 81.4, S1: 41, H: 32, D: null, L1: null, flange: null, category: "light" },
+        { code: "20441-45-16", thread: "M45X2", dn: 25, dash: "16", tube_od: 35, L: 87.4, S1: 50, H: 38, D: null, L1: null, flange: null, category: "light" },
+        { code: "20441-45-20", thread: "M45X2", dn: 32, dash: "20", tube_od: 35, L: 98.8, S1: 50, H: 38, D: null, L1: null, flange: null, category: "light" },
+        { code: "20441-52-20", thread: "M52X2", dn: 32, dash: "20", tube_od: 42, L: 105.3, S1: 60, H: 44.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20441-52-24", thread: "M52X2", dn: 38, dash: "24", tube_od: 42, L: 115.6, S1: 60, H: 44.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20491-14-04", thread: "M14X1.5", dn: 6, dash: "04", tube_od: 8, L: 32, S1: 17, H: 30.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20491-16-04", thread: "M16X1.5", dn: 6, dash: "04", tube_od: 10, L: 32, S1: 19, H: 33, D: null, L1: null, flange: null, category: "light" },
+        { code: "20491-18-05", thread: "M18X1.5", dn: 8, dash: "05", tube_od: 10, L: 32.5, S1: 22, H: 33, D: null, L1: null, flange: null, category: "light" },
+        { code: "20491-18-06", thread: "M18X1.5", dn: 8, dash: "05", tube_od: 12, L: 32.5, S1: 22, H: 36, D: null, L1: null, flange: null, category: "light" },
+        { code: "20491-22-08", thread: "M22X1.5", dn: 13, dash: "08", tube_od: 15, L: 44.5, S1: 27, H: 40.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20491-26-08", thread: "M26X1.5", dn: 13, dash: "08", tube_od: 18, L: 44.5, S1: 32, H: 51.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20491-26-10", thread: "M26X1.5", dn: 16, dash: "10", tube_od: 18, L: 55, S1: 32, H: 51.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20491-30-10", thread: "M30X2", dn: 16, dash: "10", tube_od: 22, L: 55, S1: 36, H: 56, D: null, L1: null, flange: null, category: "light" },
+        { code: "20491-30-12", thread: "M30X2", dn: 19, dash: "12", tube_od: 22, L: 62, S1: 36, H: 56, D: null, L1: null, flange: null, category: "light" },
+        { code: "20491-36-12", thread: "M36X2", dn: 19, dash: "12", tube_od: 28, L: 62, S1: 41, H: 68.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20491-36-16", thread: "M36X2", dn: 25, dash: "16", tube_od: 28, L: 74, S1: 41, H: 68.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20491-45-16", thread: "M45X2", dn: 25, dash: "16", tube_od: 35, L: 74, S1: 50, H: 78.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20491-45-20", thread: "M45X2", dn: 32, dash: "20", tube_od: 35, L: 91.5, S1: 50, H: 78.5, D: null, L1: null, flange: null, category: "light" },
+        { code: "20491-52-20", thread: "M52X2", dn: 32, dash: "20", tube_od: 42, L: 91.5, S1: 60, H: 95, D: null, L1: null, flange: null, category: "light" },
+        { code: "20491-52-24", thread: "M52X2", dn: 38, dash: "24", tube_od: 42, L: 108, S1: 60, H: 95, D: null, L1: null, flange: null, category: "light" },
+
+        // ---- 公制重系列 (205) ----
+        { code: "20511-16-04", thread: "M16X1.5", dn: 6, dash: "04", tube_od: 8, L: 24, S1: 19, H: null, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20511-18-04", thread: "M18X1.5", dn: 6, dash: "04", tube_od: 10, L: 25, S1: 22, H: null, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20511-18-05", thread: "M18X1.5", dn: 8, dash: "05", tube_od: 10, L: 25, S1: 22, H: null, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20511-18-06", thread: "M18X1.5", dn: 10, dash: "06", tube_od: 10, L: 25, S1: 22, H: null, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20511-20-05", thread: "M20X1.5", dn: 8, dash: "05", tube_od: 12, L: 25.5, S1: 24, H: null, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20511-20-06", thread: "M20X1.5", dn: 10, dash: "06", tube_od: 12, L: 25.5, S1: 24, H: null, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20511-22-06", thread: "M22X1.5", dn: 10, dash: "06", tube_od: 14, L: 25.5, S1: 27, H: null, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20511-24-08", thread: "M24X1.5", dn: 13, dash: "08", tube_od: 16, L: 30, S1: 30, H: null, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20511-30-10", thread: "M30X2", dn: 16, dash: "10", tube_od: 20, L: 34, S1: 36, H: null, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20511-36-12", thread: "M30X2", dn: 19, dash: "12", tube_od: 20, L: 35, S1: 36, H: null, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20511-36-16", thread: "M36X2", dn: 19, dash: "12", tube_od: 25, L: 32, S1: 46, H: null, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20511-42-16", thread: "M42X2", dn: 25, dash: "16", tube_od: 25, L: 35.5, S1: 46, H: null, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20511-52-20", thread: "M52X2", dn: 32, dash: "20", tube_od: 38, L: 36, S1: 60, H: null, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20541-16-04", thread: "M16X1.5", dn: 6, dash: "04", tube_od: 8, L: 40.8, S1: 19, H: 17, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20541-18-04", thread: "M18X1.5", dn: 6, dash: "04", tube_od: 10, L: 40.8, S1: 22, H: 17, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20541-18-05", thread: "M18X1.5", dn: 8, dash: "05", tube_od: 10, L: 41.7, S1: 22, H: 18, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20541-18-06", thread: "M18X1.5", dn: 10, dash: "06", tube_od: 10, L: 44.5, S1: 22, H: 18.5, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20541-20-05", thread: "M20X1.5", dn: 8, dash: "05", tube_od: 12, L: 41.7, S1: 24, H: 18, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20541-20-06", thread: "M20X1.5", dn: 10, dash: "06", tube_od: 12, L: 44.5, S1: 24, H: 18.5, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20541-22-06", thread: "M22X1.5", dn: 10, dash: "06", tube_od: 14, L: 48.9, S1: 27, H: 22.9, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20541-24-08", thread: "M24X1.5", dn: 13, dash: "08", tube_od: 16, L: 52.3, S1: 30, H: 21, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20541-30-10", thread: "M30X2", dn: 16, dash: "10", tube_od: 20, L: 64.2, S1: 36, H: 25, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20541-30-12", thread: "M30X2", dn: 19, dash: "12", tube_od: 20, L: 73.2, S1: 36, H: 30.5, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20541-36-16", thread: "M36X2", dn: 25, dash: "16", tube_od: 25, L: 84.9, S1: 46, H: 35.5, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20541-42-16", thread: "M42X2", dn: 32, dash: "20", tube_od: 38, L: 102.7, S1: 60, H: 42, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20591-16-04", thread: "M16X1.5", dn: 6, dash: "04", tube_od: 8, L: 32, S1: 19, H: 32, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20591-18-04", thread: "M18X1.5", dn: 6, dash: "04", tube_od: 10, L: 32, S1: 22, H: 32, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20591-18-05", thread: "M18X1.5", dn: 8, dash: "05", tube_od: 10, L: 32.5, S1: 22, H: 34, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20591-18-06", thread: "M18X1.5", dn: 10, dash: "06", tube_od: 10, L: 36.5, S1: 22, H: 35.5, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20591-20-05", thread: "M20X1.5", dn: 8, dash: "05", tube_od: 12, L: 32.5, S1: 24, H: 34, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20591-20-06", thread: "M20X1.5", dn: 10, dash: "06", tube_od: 12, L: 36.5, S1: 24, H: 35.5, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20591-22-06", thread: "M22X1.5", dn: 10, dash: "06", tube_od: 14, L: 36.5, S1: 27, H: 43, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20591-24-08", thread: "M24X1.5", dn: 13, dash: "08", tube_od: 16, L: 44.5, S1: 30, H: 43, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20591-30-10", thread: "M30X2", dn: 16, dash: "10", tube_od: 20, L: 55, S1: 36, H: 49.5, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20591-30-12", thread: "M30X2", dn: 19, dash: "12", tube_od: 20, L: 62, S1: 36, H: 59, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20591-36-12", thread: "M36X2", dn: 19, dash: "12", tube_od: 25, L: 62, S1: 46, H: 59, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20591-36-16", thread: "M36X2", dn: 25, dash: "16", tube_od: 25, L: 74, S1: 46, H: 70, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20591-42-16", thread: "M42X2", dn: 25, dash: "16", tube_od: 30, L: 74, S1: 50, H: 70, D: null, L1: null, flange: null, category: "heavy" },
+        { code: "20591-52-20", thread: "M52X2", dn: 32, dash: "20", tube_od: 38, L: 91.5, S1: 60, H: 87, D: null, L1: null, flange: null, category: "heavy" },
+
+        // ---- SAE法兰3000PSI (873) ----
+        { code: "87311-08-08", thread: null, dn: 13, dash: "08", tube_od: null, L: 46, S1: null, H: null, D: 30.2, L1: 6.73, flange: "1/2\"", category: "flange3k" },
+        { code: "87311-12-08", thread: null, dn: 13, dash: "08", tube_od: null, L: 47, S1: null, H: null, D: 38.1, L1: 6.73, flange: "3/4\"", category: "flange3k" },
+        { code: "87311-12-10", thread: null, dn: 16, dash: "10", tube_od: null, L: 48, S1: null, H: null, D: 38.1, L1: 6.73, flange: "3/4\"", category: "flange3k" },
+        { code: "87311-12-12", thread: null, dn: 19, dash: "12", tube_od: null, L: 48, S1: null, H: null, D: 38.1, L1: 6.73, flange: "3/4\"", category: "flange3k" },
+        { code: "87311-12-16", thread: null, dn: 25, dash: "16", tube_od: null, L: 49, S1: null, H: null, D: 38.1, L1: 6.73, flange: "3/4\"", category: "flange3k" },
+        { code: "87311-16-12", thread: null, dn: 19, dash: "12", tube_od: null, L: 51, S1: null, H: null, D: 44.4, L1: 8, flange: "1\"", category: "flange3k" },
+        { code: "87311-16-16", thread: null, dn: 25, dash: "16", tube_od: null, L: 52, S1: null, H: null, D: 44.4, L1: 8, flange: "1\"", category: "flange3k" },
+        { code: "87311-16-20", thread: null, dn: 32, dash: "20", tube_od: null, L: 53, S1: null, H: null, D: 44.4, L1: 8, flange: "1\"", category: "flange3k" },
+        { code: "87311-20-16", thread: null, dn: 25, dash: "16", tube_od: null, L: 57, S1: null, H: null, D: 50.8, L1: 8, flange: "1.1/4\"", category: "flange3k" },
+        { code: "87311-24-20", thread: null, dn: 32, dash: "20", tube_od: null, L: 68, S1: null, H: null, D: 60.3, L1: 8, flange: "1.1/2\"", category: "flange3k" },
+        { code: "87311-24-24", thread: null, dn: 38, dash: "24", tube_od: null, L: 68, S1: null, H: null, D: 60.3, L1: 8, flange: "1.1/2\"", category: "flange3k" },
+        { code: "87311-32-24", thread: null, dn: 38, dash: "24", tube_od: null, L: 66, S1: null, H: null, D: 71.4, L1: 9.53, flange: "2\"", category: "flange3k" },
+        { code: "87311-32-32", thread: null, dn: 51, dash: "32", tube_od: null, L: 66, S1: null, H: null, D: 71.4, L1: 9.53, flange: "2\"", category: "flange3k" },
+        { code: "87341-08-08", thread: null, dn: 13, dash: "08", tube_od: null, L: 50.3, S1: null, H: 19, D: 30.2, L1: 6.73, flange: "1/2\"", category: "flange3k" },
+        { code: "87341-12-08", thread: null, dn: 13, dash: "08", tube_od: null, L: 57.3, S1: null, H: 26, D: 38.1, L1: 6.73, flange: "3/4\"", category: "flange3k" },
+        { code: "87341-12-10", thread: null, dn: 16, dash: "10", tube_od: null, L: 65.2, S1: null, H: 26, D: 38.1, L1: 6.73, flange: "3/4\"", category: "flange3k" },
+        { code: "87341-12-12", thread: null, dn: 19, dash: "12", tube_od: null, L: 68.7, S1: null, H: 30, D: 38.1, L1: 6.73, flange: "3/4\"", category: "flange3k" },
+        { code: "87341-12-16", thread: null, dn: 25, dash: "16", tube_od: null, L: 74.7, S1: null, H: 32, D: 38.1, L1: 6.73, flange: "3/4\"", category: "flange3k" },
+        { code: "87341-16-12", thread: null, dn: 19, dash: "12", tube_od: null, L: 81.4, S1: null, H: 32, D: 44.4, L1: 8, flange: "1\"", category: "flange3k" },
+        { code: "87341-16-16", thread: null, dn: 25, dash: "16", tube_od: null, L: 95.8, S1: null, H: 35, D: 44.4, L1: 8, flange: "1\"", category: "flange3k" },
+        { code: "87341-20-16", thread: null, dn: 32, dash: "20", tube_od: null, L: 87.4, S1: null, H: 38, D: 44.4, L1: 8, flange: "1.1/4\"", category: "flange3k" },
+        { code: "87341-20-20", thread: null, dn: 32, dash: "20", tube_od: null, L: 104.7, S1: null, H: 44, D: 50.8, L1: 8, flange: "1.1/4\"", category: "flange3k" },
+        { code: "87341-24-20", thread: null, dn: 32, dash: "20", tube_od: null, L: 115.1, S1: null, H: 56, D: 60.3, L1: 8, flange: "1.1/2\"", category: "flange3k" },
+        { code: "87341-24-24", thread: null, dn: 38, dash: "24", tube_od: null, L: 141, S1: null, H: 56, D: 60.3, L1: 8, flange: "1.1/2\"", category: "flange3k" },
+        { code: "87341-32-24", thread: null, dn: 38, dash: "24", tube_od: null, L: null, S1: null, H: null, D: 71.4, L1: 9.53, flange: "2\"", category: "flange3k" },
+        { code: "87341-32-32", thread: null, dn: 51, dash: "32", tube_od: null, L: null, S1: null, H: null, D: 71.4, L1: 9.53, flange: "2\"", category: "flange3k" },
+        { code: "87391-08-08", thread: null, dn: 13, dash: "08", tube_od: null, L: 44.5, S1: null, H: 40, D: 30.2, L1: 6.73, flange: "1/2\"", category: "flange3k" },
+        { code: "87391-12-08", thread: null, dn: 13, dash: "08", tube_od: null, L: 44.5, S1: null, H: 58, D: 38.1, L1: 6.73, flange: "3/4\"", category: "flange3k" },
+        { code: "87391-12-10", thread: null, dn: 16, dash: "10", tube_od: null, L: 55, S1: null, H: 58, D: 38.1, L1: 6.73, flange: "3/4\"", category: "flange3k" },
+        { code: "87391-12-12", thread: null, dn: 19, dash: "12", tube_od: null, L: 62, S1: null, H: 58, D: 38.1, L1: 6.73, flange: "3/4\"", category: "flange3k" },
+        { code: "87391-12-16", thread: null, dn: 25, dash: "16", tube_od: null, L: 74, S1: null, H: 68, D: 38.1, L1: 6.73, flange: "3/4\"", category: "flange3k" },
+        { code: "87391-16-12", thread: null, dn: 19, dash: "12", tube_od: null, L: 62, S1: null, H: 70, D: 44.4, L1: 8, flange: "1\"", category: "flange3k" },
+        { code: "87391-16-16", thread: null, dn: 25, dash: "16", tube_od: null, L: 74, S1: null, H: 70, D: 44.4, L1: 8, flange: "1\"", category: "flange3k" },
+        { code: "87391-16-20", thread: null, dn: 32, dash: "20", tube_od: null, L: 91.5, S1: null, H: 82, D: 44.4, L1: 8, flange: "1\"", category: "flange3k" },
+        { code: "87391-20-20", thread: null, dn: 25, dash: "16", tube_od: null, L: 74, S1: null, H: 90, D: 50.8, L1: 8, flange: "1.1/4\"", category: "flange3k" },
+        { code: "87391-24-20", thread: null, dn: 32, dash: "20", tube_od: null, L: 91.5, S1: null, H: 104, D: 60.3, L1: 8, flange: "1.1/2\"", category: "flange3k" },
+        { code: "87391-24-24", thread: null, dn: 38, dash: "24", tube_od: null, L: 108, S1: null, H: 104, D: 60.3, L1: 8, flange: "1.1/2\"", category: "flange3k" },
+        { code: "87391-32-24", thread: null, dn: 38, dash: "24", tube_od: null, L: 133.8, S1: null, H: 138, D: 71.4, L1: 9.53, flange: "2\"", category: "flange3k" },
+        { code: "87391-32-32", thread: null, dn: 51, dash: "32", tube_od: null, L: 133.8, S1: null, H: 138, D: 71.4, L1: 9.53, flange: "2\"", category: "flange3k" },
+
+        // ---- SAE法兰6000PSI (876) ----
+        { code: "87611-08-08", thread: null, dn: 13, dash: "08", tube_od: null, L: 47, S1: null, H: null, D: 31.7, L1: 7.75, flange: "1/2\"", category: "flange6k" },
+        { code: "87611-12-10", thread: null, dn: 16, dash: "10", tube_od: null, L: 51, S1: null, H: null, D: 41.3, L1: 8.76, flange: "3/4\"", category: "flange6k" },
+        { code: "87611-12-12", thread: null, dn: 19, dash: "12", tube_od: null, L: 51, S1: null, H: null, D: 41.3, L1: 8.76, flange: "3/4\"", category: "flange6k" },
+        { code: "87611-16-12", thread: null, dn: 19, dash: "12", tube_od: null, L: 56, S1: null, H: null, D: 47.6, L1: 9.53, flange: "1\"", category: "flange6k" },
+        { code: "87611-16-16", thread: null, dn: 25, dash: "16", tube_od: null, L: 57, S1: null, H: null, D: 47.6, L1: 9.53, flange: "1\"", category: "flange6k" },
+        { code: "87611-20-16", thread: null, dn: 32, dash: "20", tube_od: null, L: 58, S1: null, H: null, D: 47.6, L1: 9.53, flange: "1\"", category: "flange6k" },
+        { code: "87611-20-24", thread: null, dn: 25, dash: "16", tube_od: null, L: 65, S1: null, H: null, D: 54, L1: 10.29, flange: "1.1/4\"", category: "flange6k" },
+        { code: "87611-24-24", thread: null, dn: 38, dash: "24", tube_od: null, L: 75, S1: null, H: null, D: 63.5, L1: 12.57, flange: "1.1/2\"", category: "flange6k" },
+        { code: "87611-32-24", thread: null, dn: 38, dash: "24", tube_od: null, L: 85, S1: null, H: null, D: 79.4, L1: 12.57, flange: "2\"", category: "flange6k" },
+        { code: "87611-32-32", thread: null, dn: 51, dash: "32", tube_od: null, L: 85, S1: null, H: null, D: 79.4, L1: 12.57, flange: "2\"", category: "flange6k" },
+        { code: "87641-08-08", thread: null, dn: 13, dash: "08", tube_od: null, L: 50.3, S1: null, H: 19, D: 31.7, L1: 7.75, flange: "1/2\"", category: "flange6k" },
+        { code: "87641-12-10", thread: null, dn: 16, dash: "10", tube_od: null, L: 65.2, S1: null, H: 26, D: 41.3, L1: 8.76, flange: "3/4\"", category: "flange6k" },
+        { code: "87641-12-12", thread: null, dn: 19, dash: "12", tube_od: null, L: 68.7, S1: null, H: 26, D: 41.3, L1: 8.76, flange: "3/4\"", category: "flange6k" },
+        { code: "87641-16-12", thread: null, dn: 19, dash: "12", tube_od: null, L: 81.4, S1: null, H: null, D: 47.6, L1: 9.53, flange: "1\"", category: "flange6k" },
+        { code: "87641-16-16", thread: null, dn: 25, dash: "16", tube_od: null, L: 95.8, S1: null, H: 35, D: 47.6, L1: 9.53, flange: "1\"", category: "flange6k" },
+        { code: "87641-16-20", thread: null, dn: 32, dash: "20", tube_od: null, L: 87.4, S1: null, H: 38, D: 47.6, L1: 9.53, flange: "1\"", category: "flange6k" },
+        { code: "87641-20-16", thread: null, dn: 25, dash: "16", tube_od: null, L: 98.8, S1: null, H: 38, D: 54, L1: 10.29, flange: "1.1/4\"", category: "flange6k" },
+        { code: "87641-20-20", thread: null, dn: 32, dash: "20", tube_od: null, L: 115.1, S1: null, H: 44, D: 54, L1: 10.29, flange: "1.1/4\"", category: "flange6k" },
+        { code: "87641-24-24", thread: null, dn: 38, dash: "24", tube_od: null, L: 127.1, S1: null, H: 56, D: 63.5, L1: 12.57, flange: "1.1/2\"", category: "flange6k" },
+        { code: "87641-32-24", thread: null, dn: 38, dash: "24", tube_od: null, L: 141, S1: null, H: 56, D: 79.4, L1: 12.57, flange: "2\"", category: "flange6k" },
+        { code: "87641-32-32", thread: null, dn: 51, dash: "32", tube_od: null, L: null, S1: null, H: null, D: 79.4, L1: 12.57, flange: "2\"", category: "flange6k" },
+        { code: "87691-08-08", thread: null, dn: 13, dash: "08", tube_od: null, L: 44.5, S1: null, H: 40, D: 31.7, L1: 7.75, flange: "1/2\"", category: "flange6k" },
+        { code: "87691-12-10", thread: null, dn: 16, dash: "10", tube_od: null, L: 55, S1: null, H: 58, D: 41.3, L1: 8.76, flange: "3/4\"", category: "flange6k" },
+        { code: "87691-12-12", thread: null, dn: 19, dash: "12", tube_od: null, L: 62, S1: null, H: 58, D: 41.3, L1: 8.76, flange: "3/4\"", category: "flange6k" },
+        { code: "87691-16-12", thread: null, dn: 19, dash: "12", tube_od: null, L: 62, S1: null, H: 70, D: 47.6, L1: 9.53, flange: "1\"", category: "flange6k" },
+        { code: "87691-16-16", thread: null, dn: 25, dash: "16", tube_od: null, L: 91.5, S1: null, H: 82, D: 47.6, L1: 9.53, flange: "1\"", category: "flange6k" },
+        { code: "87691-16-20", thread: null, dn: 32, dash: "20", tube_od: null, L: 74, S1: null, H: 90, D: 47.6, L1: 9.53, flange: "1\"", category: "flange6k" },
+        { code: "87691-20-16", thread: null, dn: 25, dash: "16", tube_od: null, L: 91.5, S1: null, H: 90, D: 54, L1: 10.29, flange: "1.1/4\"", category: "flange6k" },
+        { code: "87691-24-20", thread: null, dn: 32, dash: "20", tube_od: null, L: 108, S1: null, H: 104, D: 63.5, L1: 12.57, flange: "1.1/2\"", category: "flange6k" },
+        { code: "87691-24-24", thread: null, dn: 38, dash: "24", tube_od: null, L: 133.8, S1: null, H: 138, D: 63.5, L1: 12.57, flange: "1.1/2\"", category: "flange6k" },
+        { code: "87691-32-24", thread: null, dn: 38, dash: "24", tube_od: null, L: 133.8, S1: null, H: 139, D: 79.4, L1: 12.57, flange: "2\"", category: "flange6k" },
+        { code: "87691-32-32", thread: null, dn: 51, dash: "32", tube_od: null, L: null, S1: null, H: null, D: 79.4, L1: 12.57, flange: "2\"", category: "flange6k" }
+    ];
+
+    const fittingData = baseFitting.map(item => ({ ...item, angle: getAngleFromCode(item.code) }));
+
+    // ============================================================
+    //  DOM引用与状态
+    // ============================================================
+    const viewBtns = document.querySelectorAll('.view-btn');
+    const hoseFilterGroup = document.getElementById('hoseFilterGroup');
+    const fittingFilterBar = document.getElementById('fittingFilterBar');
+    const tableWrapper = document.getElementById('tableWrapper');
+    const tableHead = document.getElementById('tableHead');
+    const tableBody = document.getElementById('tableBody');
+    const resultCount = document.getElementById('resultCount');
+    const activeHint = document.getElementById('activeHint');
+
+    let currentView = 'hose';
+    let currentHoseCategory = 'all';
+    let currentCategory = 'all';
+    let currentAngle = 'all';
+
+    // ============================================================
+    //  生成软管分类按钮 (使用前缀: 1SN, 2SN, 4SH, 4SP, R15)
+    // ============================================================
+    function buildHoseFilterButtons() {
+        hoseFilterGroup.innerHTML = '<span class="label">型号：</span>';
+        const allBtn = document.createElement('button');
+        allBtn.className = 'filter-btn active';
+        allBtn.dataset.type = 'hoseCategory';
+        allBtn.dataset.value = 'all';
+        allBtn.textContent = '全部';
+        hoseFilterGroup.appendChild(allBtn);
+
+        hoseCategories.forEach(cat => {
+            const btn = document.createElement('button');
+            btn.className = 'filter-btn';
+            btn.dataset.type = 'hoseCategory';
+            btn.dataset.value = cat;
+            btn.textContent = cat;
+            hoseFilterGroup.appendChild(btn);
+        });
+
+        // 绑定事件
+        hoseFilterGroup.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (currentView !== 'hose') return;
+                const type = this.dataset.type;
+                if (type === 'hoseCategory') {
+                    hoseFilterGroup.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentHoseCategory = this.dataset.value;
+                    updateView();
+                }
+            });
+        });
+    }
+    buildHoseFilterButtons();
+
+    // ============================================================
+    //  渲染函数
+    // ============================================================
+    function renderHose(data) {
+        tableHead.innerHTML = `<tr>
+            <th>型号</th><th>软管尺寸</th><th>内径 (mm)</th><th>外径 (mm)</th><th>最大工作压力 (MPa)</th><th>备注</th>
+        </tr>`;
+        if (!data || data.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;">无软管数据</td></tr>`;
+            resultCount.textContent = '0';
+            return;
+        }
+        let html = '';
+        data.forEach(item => {
+            html += `<tr>
+                <td class="col-code">${item.model}</td>
+                <td>${item.dash}</td>
+                <td class="col-num">${item.inner}</td>
+                <td class="col-num">${item.outer}</td>
+                <td class="col-num">${item.pressure}</td>
+                <td>${item.remark}</td>
+            </tr>`;
+        });
+        tableBody.innerHTML = html;
+        resultCount.textContent = data.length;
+    }
+
+    function renderFitting(data) {
+        tableHead.innerHTML = `<tr>
+            <th>代号</th><th>螺纹</th><th>DN</th><th>DASH</th><th>管子外径</th><th>L</th><th>S1</th><th>H</th><th>D</th><th>L1</th><th>法兰型号</th>
+        </tr>`;
+        if (!data || data.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:40px;">无接头数据</td></tr>`;
+            resultCount.textContent = '0';
+            return;
+        }
+        let html = '';
+        data.forEach(item => {
+            const isMetric = (item.category === 'light' || item.category === 'heavy');
+            const showH = isMetric ? '' : (item.H ?? '');
+            const showD = isMetric ? '' : (item.D ?? '');
+            const showL1 = isMetric ? '' : (item.L1 ?? '');
+            const showFlange = isMetric ? '' : (item.flange ?? '');
+            html += `<tr>
+                <td class="col-code">${item.code}</td>
+                <td class="col-thread">${item.thread || '-'}</td>
+                <td class="col-num">${item.dn}</td>
+                <td class="col-num">${item.dash}</td>
+                <td class="col-num">${item.tube_od ?? '-'}</td>
+                <td class="col-num">${item.L ?? '-'}</td>
+                <td class="col-num">${item.S1 ?? '-'}</td>
+                <td class="col-num">${showH}</td>
+                <td class="col-num">${showD}</td>
+                <td class="col-num">${showL1}</td>
+                <td>${showFlange}</td>
+            </tr>`;
+        });
+        tableBody.innerHTML = html;
+        resultCount.textContent = data.length;
+    }
+
+    function getFilteredHose() {
+        if (currentHoseCategory === 'all') return hoseData;
+        return hoseData.filter(item => item.model.startsWith(currentHoseCategory));
+    }
+
+    function getFilteredFitting() {
+        let filtered = fittingData;
+        if (currentCategory !== 'all') {
+            filtered = filtered.filter(item => item.category === currentCategory);
+        }
+        if (currentAngle !== 'all') {
+            filtered = filtered.filter(item => item.angle === currentAngle);
+        }
+        return filtered;
+    }
+
+    function updateView() {
+        // 控制筛选栏显隐
+        if (currentView === 'hose') {
+            document.getElementById('hoseFilterBar').classList.add('visible');
+            fittingFilterBar.classList.remove('visible');
+        } else {
+            document.getElementById('hoseFilterBar').classList.remove('visible');
+            fittingFilterBar.classList.add('visible');
+        }
+
+        if (currentView === 'hose') {
+            const data = getFilteredHose();
+            renderHose(data);
+            const catLabel = currentHoseCategory === 'all' ? '全部型号' : currentHoseCategory;
+            activeHint.textContent = `软管 · ${catLabel} (共 ${data.length} 条)`;
+        } else {
+            const data = getFilteredFitting();
+            renderFitting(data);
+            const catLabel = currentCategory === 'all' ? '全部' :
+                (currentCategory === 'light' ? '公制轻' :
+                (currentCategory === 'heavy' ? '公制重' :
+                (currentCategory === 'flange3k' ? '法兰3K' : '法兰6K')));
+            const angleLabel = currentAngle === 'all' ? '全部角度' :
+                (currentAngle === 'straight' ? '直头' :
+                (currentAngle === '45' ? '45°' : '90°'));
+            activeHint.textContent = `接头 · ${catLabel} · ${angleLabel} (共 ${data.length} 条)`;
+        }
+        tableWrapper.classList.add('visible');
+    }
+
+    // ============================================================
+    //  事件绑定
+    // ============================================================
+    // 视图切换
+    viewBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            viewBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentView = this.dataset.view;
+            if (currentView === 'fitting') {
+                currentCategory = 'all';
+                currentAngle = 'all';
+                document.querySelectorAll('#fittingFilterBar .filter-btn[data-type="category"]').forEach(b => b.classList.remove('active'));
+                document.querySelector('#fittingFilterBar .filter-btn[data-type="category"][data-value="all"]').classList.add('active');
+                document.querySelectorAll('#fittingFilterBar .filter-btn[data-type="angle"]').forEach(b => b.classList.remove('active'));
+                document.querySelector('#fittingFilterBar .filter-btn[data-type="angle"][data-value="all"]').classList.add('active');
+            }
+            if (currentView === 'hose') {
+                currentHoseCategory = 'all';
+                hoseFilterGroup.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                hoseFilterGroup.querySelector('.filter-btn[data-value="all"]').classList.add('active');
+            }
+            updateView();
+        });
+    });
+
+    // 接头筛选按钮
+    document.querySelectorAll('#fittingFilterBar .filter-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (currentView !== 'fitting') return;
+            const type = this.dataset.type;
+            const value = this.dataset.value;
+            document.querySelectorAll(`#fittingFilterBar .filter-btn[data-type="${type}"]`).forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            if (type === 'category') currentCategory = value;
+            else if (type === 'angle') currentAngle = value;
+            updateView();
+        });
+    });
+
+    // ============================================================
+    //  初始化 (默认软管)
+    // ============================================================
+    currentView = 'hose';
+    document.querySelector('.view-btn[data-view="hose"]').classList.add('active');
+    document.getElementById('hoseFilterBar').classList.add('visible');
+    fittingFilterBar.classList.remove('visible');
+    currentHoseCategory = 'all';
+    hoseFilterGroup.querySelector('.filter-btn[data-value="all"]').classList.add('active');
+    updateView();
+
+    console.log(`✅ 软管: ${hoseData.length} 条，接头: ${fittingData.length} 条`);
+    console.log('💡 软管分类: 1SN, 2SN, 4SH, 4SP, R15');
+</script>
+</body>
+</html>
